@@ -16,6 +16,8 @@
     "url": "https://github.com/UniBot/unibot-ghFeed/issues"
   },
   "dependencies": {
-    "feedparser": "~0.19.2"
+    "feedparser": "~0.19.2",
+    "moment": "~2.8.4",
+    "lodash": "~2.4.1"
   }
 }
