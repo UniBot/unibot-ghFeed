@@ -1,5 +1,10 @@
 # unibot-ghFeed
-GitHub user activity feed plugin for UniBot.
+GitHub user activity feed plugin for UniBot. Basically plugin just reads GitHub user public activity feed and shows 
+that on IRC channel. These feeds are accessible via following URL:
+
+```
+https://github.com/[GitHubUsername].atom
+``` 
 
 ## Install
 To your UniBot application
@@ -23,3 +28,7 @@ After installation you can use following commands to use plugin:
 
 Note that default count of items is one (1) and it can be configured.
 
+## Libraries that plugin uses
+* [Feedparser](https://github.com/danmactough/node-feedparser) - Robust RSS, Atom, and RDF feed parsing in Node.js
+* [Lo-Dash](https://lodash.com/) - A utility library delivering consistency, customization, performance, & extras.
+* [Moment.js](http://momentjs.com/) - Parse, validate, manipulate, and display dates in JavaScript.
