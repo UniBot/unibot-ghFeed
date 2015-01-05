@@ -5,7 +5,9 @@
  */
 var FeedParser = require('feedparser');
 var request = require('request');
+var cheerio = require('cheerio')
 var moment = require('moment');
+var shorturl = require('shorturl');
 var _ = require('lodash');
 
 /**
@@ -25,7 +27,7 @@ module.exports = function init(options) {
     var config = options.config;
 
     /**
-     * Default plugin configuration. These can be override on your UniBot config.js file, just add 'ghFeed' section to
+     * Default plugin configuration. These can be override on your UniBot config.js file, just add "ghFeed" section to
      * your plugin section.
      *
      * @type    {{
@@ -55,10 +57,10 @@ module.exports = function init(options) {
             "format": "D.M.YYYY HH:mm:ss"
         },
         "messages": {
-            "success": "${timeAgo} ${item.title} - ${item.link}",
-            "errorThreshold": "You did try to fetch more feed items that is allowed!"
+            "success": "${timeAgo} ${item.title} - ${messages} - ${shortUrl}",
+            "errorThreshold": "You did try to fetch more feed items that is allowed! Maximum feed item count is ${config.messageCount.maximum}",
+            "errorNoFeedItems": "Sorry no GitHub public activity feed items for ${username} - ${url}"
         }
-
     };
 
     // Merge configuration for plugin
@@ -66,7 +68,7 @@ module.exports = function init(options) {
         pluginConfig = _.merge(pluginConfig, config.plugins.ghFeed);
     }
 
-    // Set moment locale, if it's set
+    // Set moment locale, if it"s set
     if (pluginConfig.moment.locale) {
         moment.locale(pluginConfig.moment.locale);
     }
@@ -92,56 +94,94 @@ module.exports = function init(options) {
                     return;
                 }
 
+                // Default template variables
+                var templateVars = {
+                    "url": "https://github.com/" + username + ".atom",
+                    "nick": from,
+                    "username": username,
+                    "config": pluginConfig
+                };
+
                 // Make new request and initialize FeedParser
-                var req = request('https://github.com/' + username + '.atom');
+                var req = request(templateVars.url);
                 var feedparser = new FeedParser();
 
                 // On request error send message to user
-                req.on('error', function onError(error) {
-                    channel.say('Oh noes error with request - ' + error, from);
+                req.on("error", function onError(error) {
+                    channel.say("Oh noes error with request - " + error, from);
                 });
 
                 // On request response pipe stream to FeedParser
-                req.on('response', function onResponse(response) {
+                req.on("response", function onResponse(response) {
                     var stream = this;
 
-                    // We didn't get HTTP 200, something is wrong
+                    // We didn"t get HTTP 200, something is wrong
                     if (response.statusCode != 200) {
-                        return this.emit('error', new Error('Bad status code'));
+                        return this.emit("error", new Error("Bad status code"));
                     }
 
                     stream.pipe(feedparser);
                 });
 
                 // On FeedParser error send message to user
-                feedparser.on('error', function onError(error) {
-                    channel.say('Oh noes error with FeedParser - ' + error, from);
+                feedparser.on("error", function onError(error) {
+                    channel.say("Oh noes error with FeedParser - " + error, from);
                 });
 
                 // Initialize counter
                 var i = 0;
+
+                // Determine actual target, this depends the message count threshold value
                 var target = itemCount > pluginConfig.messageCount.threshold ? from : undefined;
 
                 // On FeedParser result
-                feedparser.on('readable', function iterator() {
+                feedparser.on("readable", function iterator() {
                     var stream = this;
                     var item;
 
                     // Iterate each feed item
                     while (item = stream.read()) {
                         if (i < itemCount) {
-                            var templateVars = {
-                                item: item,
-                                formattedDate: moment(item.date).format(pluginConfig.moment.format),
-                                timeAgo: moment(item.date).fromNow()
-                            };
+                            templateVars.item = item;
+                            templateVars.formattedDate = moment(item.date).format(pluginConfig.moment.format);
+                            templateVars.timeAgo = moment(item.date).fromNow();
 
-                            channel.say(_.template(pluginConfig.messages.success, templateVars), target);
+                            var $ = cheerio.load(item.description);
+                            var messages = [];
+
+                            // Check possible commit messages
+                            $('div.commits ul li div.message').each(function iterator(i, elem) {
+                                var commit =
+
+                                    messages.push($(this).text().trim());
+                            });
+
+                            // Check for possible comment titles
+                            $('div.title a').each(function iterator(i, elem) {
+                                if ($(elem).attr('title')) {
+                                    messages.push($(elem).attr('title').trim());
+                                }
+                            });
+
+                            templateVars.messages = messages.length ? messages.join(', ') : 'No detailed info';
+
+                            shorturl(item.link, function(shortUrl) {
+                                templateVars.shortUrl = shortUrl;
+
+                                channel.say(_.template(pluginConfig.messages.success, templateVars), target);
+                            })
                         } else if (i === itemCount) {
-                            stream.emit('end');
+                            return;
                         }
 
                         i++;
+                    }
+                });
+
+                // And after all is done
+                feedparser.on("end", function onEnd() {
+                    if (i === 0) {
+                        channel.say(_.template(pluginConfig.messages.errorNoFeedItems, templateVars), from);
                     }
                 });
             }
