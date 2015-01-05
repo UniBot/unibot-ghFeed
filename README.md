@@ -72,10 +72,10 @@ Used ```format``` string for ```formattedDate``` template variable. See possible
 Used message templates. With all of there templates you can use following template variables.
 
 ```
-url             = GitHub feed URL, like https://github.com/tarlepp.atom
-nick            = IRC nick who triggered plugin
-username        = Parsed GitHub username
-config          = Current plugin config as an object
+url         =   GitHub feed URL, like https://github.com/tarlepp.atom
+nick        =   IRC nick who triggered plugin
+username    =   Parsed GitHub username
+config      =   Current plugin config as an object
 ```
 
 Note that some messages can have extra variables too, those are documented under each message.
@@ -85,11 +85,11 @@ Message that are shown after feed item(s) have been fetched and parsed for actua
 also following template variables that you can use.
 
 ```
-item            = Actual feed item object from FeedParser
-formattedDate   = Formatted date for feed item 
-timeAgo         = How long ago feed item was made
-messages        = GitHub messages from feed item (commit messages, comment titles, etc.)
-shortUrl        = Feed item link value as in "shorturl" form
+item            =   Actual feed item object from FeedParser
+formattedDate   =   Formatted date for feed item 
+timeAgo         =   How long ago feed item was made
+messages        =   GitHub messages from feed item (commit messages, comment titles, etc.)
+shortUrl        =   Feed item link value as in "shorturl" form
 ```
 
 #### messages.errors.threshold
@@ -98,11 +98,20 @@ sent to user as a private message.
 
 #### messages.errors.request
 Message that is emitted to user whenever HTTP request error occurs when plugin is processing GitHub feed URL. Note that
-this message is sent to user as a private message.
+this message is sent to user as a private message. Note that with this message you can also use following template
+variable.
+
+```
+error   =   Request error
+```
  
 #### messages.errors.feedParser
 Message that is emitted to user whenever FeedParser error occurs when plugin is processing feed item. Note that this 
-message is sent to user as a private message.
+message is sent to user as a private message. Note that with this message you can also use following template variable.
+                                              
+```
+error   =   FeedParser error
+```
 
 #### messages.errors.noItems
 Message that is emitted to user when he/she has requested GitHub feeds from user that is a real GitHub user but he/she
@@ -112,9 +121,9 @@ doesn't have feed items yet. Note that this message is sent to user as a private
 After installation you can use following commands to use plugin:
 
 ```
-!ghFeed             => Shows GitHub feeds according to your IRC nick
-!ghFeed tarlepp     => Shows feeds for 'tarlepp' GitHub user
-!ghFeed tarlepp 3   => Shows three (3) feeds for 'tarlepp' GitHub user
+!ghFeed             =>  Shows GitHub feeds according to your IRC nick
+!ghFeed tarlepp     =>  Shows feeds for 'tarlepp' GitHub user
+!ghFeed tarlepp 3   =>  Shows three (3) feeds for 'tarlepp' GitHub user
 ```
 
 Note that default count of items is one (1) and it can be configured.
