@@ -5,6 +5,8 @@
  */
 var FeedParser = require('feedparser');
 var request = require('request');
+var moment = require('moment');
+var _ = require('lodash');
 
 /**
  * GitHub user activity feed plugin for UniBot
@@ -32,19 +34,17 @@ module.exports = function init(options) {
                     username = matches[1];
                 }
 
-                // console.log(username, itemCount);
-
                 var req = request('https://github.com/' + username + '.atom');
                 var feedparser = new FeedParser();
 
                 req.on('error', function onError(error) {
-                    channel.say(from, 'Oh noes error with request - ' + error);
+                    channel.say('Oh noes error with request - ' + error, from);
                 });
 
                 req.on('response', function onResponse(response) {
                     var stream = this;
 
-                    if (res.statusCode != 200) {
+                    if (response.statusCode != 200) {
                         return this.emit('error', new Error('Bad status code'));
                     }
 
@@ -52,17 +52,31 @@ module.exports = function init(options) {
                 });
 
                 feedparser.on('error', function onError(error) {
-                    channel.say(from, 'Oh noes error with FeedParser - ' + error);
+                    channel.say('Oh noes error with FeedParser - ' + error, from);
                 });
 
+                var i = 0;
+
                 feedparser.on('readable', function() {
-                    // This is where the action is!
                     var stream = this
-                        , meta = this.meta // **NOTE** the "meta" is always available in the context of the feedparser instance
+                        , meta = this.meta
                         , item;
 
                     while (item = stream.read()) {
-                        console.log(item);
+                        if (i < itemCount) {
+                            var message = '${timeAgo}: ${item.title} - ${item.link}';
+                            var templateVars = {
+                                item: item,
+                                formattedDate: moment(item.date).format('dd'),
+                                timeAgo: moment(item.date).fromNow()
+                            };
+
+                            channel.say(_.template(message, templateVars));
+                        } else if (i === itemCount) {
+                            stream.emit('end');
+                        }
+
+                        i++;
                     }
                 });
             }
