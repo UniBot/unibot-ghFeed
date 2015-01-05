@@ -14,6 +14,7 @@ var _ = require('lodash');
  * GitHub user activity feed plugin for UniBot.
  *
  * @todo    Refactor regexp part of plugin
+ * @todo    Add messages for req and feedparser errors
  *
  * @param  {Object} options Plugin options object, description below.
  *   db: {mongoose} the mongodb connection
