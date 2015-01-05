@@ -1,4 +1,3 @@
-unibot-ghFeed
-=============
+# unibot-ghFeed
 
-GitHub user activity feed plugin for UniBot
+GitHub user activity feed plugin for UniBot.

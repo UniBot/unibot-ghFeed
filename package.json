@@ -1,0 +1,21 @@
+{
+  "name": "unibot-ghFeed",
+  "version": "1.0.0",
+  "description": "GitHub user activity feed plugin for UniBot.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UniBot/unibot-ghFeed.git"
+  },
+  "author": "Tarmo Leppänen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/UniBot/unibot-ghFeed/issues"
+  },
+  "dependencies": {
+    "feedparser": "~0.19.2"
+  }
+}
