@@ -42,7 +42,8 @@ module.exports = function init(options) {
      *              },
      *              messages: {
      *                  success: string,
-     *                  errorThreshold: string
+     *                  errorThreshold: string,
+     *                  errorNoFeedItems: string
      *              }
      *          }}
      */
@@ -151,9 +152,7 @@ module.exports = function init(options) {
 
                             // Check possible commit messages
                             $('div.commits ul li div.message').each(function iterator(i, elem) {
-                                var commit =
-
-                                    messages.push($(this).text().trim());
+                                messages.push($(this).text().trim());
                             });
 
                             // Check for possible comment titles
