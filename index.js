@@ -5,7 +5,7 @@
  */
 var FeedParser = require('feedparser');
 var request = require('request');
-var cheerio = require('cheerio')
+var cheerio = require('cheerio');
 var moment = require('moment');
 var shorturl = require('shorturl');
 var _ = require('lodash');
@@ -15,6 +15,8 @@ var _ = require('lodash');
  *
  * @todo    Refactor regexp part of plugin
  * @todo    Add messages for req and feedparser errors
+ * @todo    What else messages there can be on feed? Now this supports only commits and comments
+ * @todo    Move default configuration to separated file.
  *
  * @param  {Object} options Plugin options object, description below.
  *   db: {mongoose} the mongodb connection
@@ -43,8 +45,12 @@ module.exports = function init(options) {
      *              },
      *              messages: {
      *                  success: string,
-     *                  errorThreshold: string,
-     *                  errorNoFeedItems: string
+     *                  errors: {
+     *                      threshold: string,
+     *                      request: string,
+     *                      feedParser: string,
+     *                      noItems: string
+     *                  }
      *              }
      *          }}
      */
@@ -60,8 +66,12 @@ module.exports = function init(options) {
         },
         "messages": {
             "success": "${timeAgo} ${item.title} - ${messages} - ${shortUrl}",
-            "errorThreshold": "You did try to fetch more feed items that is allowed! Maximum feed item count is ${config.messageCount.maximum}",
-            "errorNoFeedItems": "Sorry no GitHub public activity feed items for ${username} - ${url}"
+            "errors": {
+                "threshold": "You did try to fetch more feed items that is allowed! Maximum feed item count is ${config.messageCount.maximum}",
+                "request": "Oh noes error with request - ${error}",
+                "feedParser": "Oh noes error with FeedParser - ${error}",
+                "noItems": "Sorry no GitHub public activity feed items for ${username} - ${url}"
+            }
         }
     };
 
@@ -90,12 +100,6 @@ module.exports = function init(options) {
                     username = matches[1];
                 }
 
-                if (itemCount > pluginConfig.messageCount.maximum) {
-                    channel.say(pluginConfig.messages.errorThreshold, from);
-
-                    return;
-                }
-
                 // Default template variables
                 var templateVars = {
                     "url": "https://github.com/" + username + ".atom",
@@ -104,13 +108,22 @@ module.exports = function init(options) {
                     "config": pluginConfig
                 };
 
+                // User did try to get more feed items that is allowed
+                if (itemCount > pluginConfig.messageCount.maximum) {
+                    channel.say(pluginConfig.messages.errors.threshold, from);
+
+                    return;
+                }
+
                 // Make new request and initialize FeedParser
                 var req = request(templateVars.url);
-                var feedparser = new FeedParser();
+                var feedParser = new FeedParser();
 
                 // On request error send message to user
                 req.on("error", function onError(error) {
-                    channel.say("Oh noes error with request - " + error, from);
+                    templateVars.error = error;
+
+                    channel.say(pluginConfig.messages.errors.request, from);
                 });
 
                 // On request response pipe stream to FeedParser
@@ -122,12 +135,14 @@ module.exports = function init(options) {
                         return this.emit("error", new Error("Bad status code"));
                     }
 
-                    stream.pipe(feedparser);
+                    stream.pipe(feedParser);
                 });
 
                 // On FeedParser error send message to user
-                feedparser.on("error", function onError(error) {
-                    channel.say("Oh noes error with FeedParser - " + error, from);
+                feedParser.on("error", function onError(error) {
+                    templateVars.error = error;
+
+                    channel.say(pluginConfig.messages.errors.feedParser, from);
                 });
 
                 // Initialize counter
@@ -137,18 +152,22 @@ module.exports = function init(options) {
                 var target = itemCount > pluginConfig.messageCount.threshold ? from : undefined;
 
                 // On FeedParser result
-                feedparser.on("readable", function iterator() {
+                feedParser.on("readable", function iterator() {
                     var stream = this;
                     var item;
 
                     // Iterate each feed item
                     while (item = stream.read()) {
                         if (i < itemCount) {
+                            // Add extra template variables
                             templateVars.item = item;
                             templateVars.formattedDate = moment(item.date).format(pluginConfig.moment.format);
                             templateVars.timeAgo = moment(item.date).fromNow();
 
+                            // Parse item description as 'jQuery' object
                             var $ = cheerio.load(item.description);
+
+                            // Initialize "real" GitHub messages
                             var messages = [];
 
                             // Check possible commit messages
@@ -165,7 +184,8 @@ module.exports = function init(options) {
 
                             templateVars.messages = messages.length ? messages.join(', ') : 'No detailed info';
 
-                            shorturl(item.link, function(shortUrl) {
+                            // Fetch shorturl for current feed item
+                            shorturl(item.link, function done(shortUrl) {
                                 templateVars.shortUrl = shortUrl;
 
                                 channel.say(_.template(pluginConfig.messages.success, templateVars), target);
@@ -179,9 +199,10 @@ module.exports = function init(options) {
                 });
 
                 // And after all is done
-                feedparser.on("end", function onEnd() {
+                feedParser.on('end', function onEnd() {
+                    // Didn't find any feed items, so sent message about that to user
                     if (i === 0) {
-                        channel.say(_.template(pluginConfig.messages.errorNoFeedItems, templateVars), from);
+                        channel.say(_.template(pluginConfig.messages.noItems, templateVars), from);
                     }
                 });
             }

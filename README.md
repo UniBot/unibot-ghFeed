@@ -37,8 +37,12 @@ module.exports = {
             },
             "messages": {
                 "success": "${timeAgo} ${item.title} - ${messages} - ${shortUrl}",
-                "errorThreshold": "You did try to fetch more feed items that is allowed! Maximum feed item count is ${config.messageCount.maximum}",
-                "errorNoFeedItems": "Sorry no GitHub public activity feed items for ${username} - ${url}"
+                "errors": {
+                    "threshold": "You did try to fetch more feed items that is allowed! Maximum feed item count is ${config.messageCount.maximum}",
+                    "request": "Oh noes error with request - ${error}",
+                    "feedParser": "Oh noes error with FeedParser - ${error}",
+                    "noItems": "Sorry no GitHub public activity feed items for ${username} - ${url}"
+                }
             }
         }
     }
@@ -88,11 +92,19 @@ messages        = GitHub messages from feed item (commit messages, comment title
 shortUrl        = Feed item link value as in "shorturl" form
 ```
 
-#### messages.errorThreshold
+#### messages.errors.threshold
 Message that is emitted to user when he/she has requested more feed items that are allowed. Note that this message is 
 sent to user as a private message.
 
-#### messages.errorNoFeedItems
+#### messages.errors.request
+Message that is emitted to user whenever HTTP request error occurs when plugin is processing GitHub feed URL. Note that
+this message is sent to user as a private message.
+ 
+#### messages.errors.feedParser
+Message that is emitted to user whenever FeedParser error occurs when plugin is processing feed item. Note that this 
+message is sent to user as a private message.
+
+#### messages.errors.noItems
 Message that is emitted to user when he/she has requested GitHub feeds from user that is a real GitHub user but he/she
 doesn't have feed items yet. Note that this message is sent to user as a private message.
 
@@ -113,3 +125,8 @@ Note that default count of items is one (1) and it can be configured.
 * [Moment.js](http://momentjs.com/) - Parse, validate, manipulate, and display dates in JavaScript.
 * [cheerio](https://github.com/cheeriojs/cheerio) - Fast, flexible, and lean implementation of core jQuery designed specifically for the server.
 * [node-shorturl](https://github.com/jdub/node-shorturl) - shorturl is a simple, asynchronous client library for common URL shortener services.
+
+## Future plans
+Add more GitHub specified actions to this plugin like;
+* Repository issue/pr/author/milestone lists (latest, etc.)
+* More? Do you have an idea? please make PR here!
